@@ -1,0 +1,306 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>오레오반 자유게시판</title>
+<style>
+  :root{
+    --cream:#faf7f2;
+    --panel:#ffffff;
+    --ink:#2b2420;
+    --sub:#8a7d6e;
+    --choco:#6b4a2f;
+    --choco-dark:#4a3220;
+    --line:#e8e0d4;
+    --accent:#d98e3f;
+  }
+  *{box-sizing:border-box;}
+  body{
+    margin:0;
+    font-family:"Pretendard","Apple SD Gothic Neo","Malgun Gothic",sans-serif;
+    background:var(--cream);
+    color:var(--ink);
+    min-height:100vh;
+  }
+  header{
+    padding:36px 20px 28px;
+    text-align:center;
+    border-bottom:2px solid var(--line);
+    background:var(--panel);
+  }
+  header h1{
+    margin:0;
+    font-size:28px;
+    letter-spacing:-0.02em;
+    color:var(--choco-dark);
+  }
+  header p{
+    margin:8px 0 0;
+    color:var(--sub);
+    font-size:14px;
+  }
+  main{
+    max-width:640px;
+    margin:0 auto;
+    padding:24px 16px 80px;
+  }
+  .write-box{
+    background:var(--panel);
+    border:1px solid var(--line);
+    border-radius:14px;
+    padding:18px;
+    margin-bottom:28px;
+  }
+  .write-box input[type="text"]{
+    width:100%;
+    border:1px solid var(--line);
+    border-radius:8px;
+    padding:10px 12px;
+    font-size:14px;
+    margin-bottom:10px;
+    font-family:inherit;
+  }
+  .write-box textarea{
+    width:100%;
+    border:1px solid var(--line);
+    border-radius:8px;
+    padding:10px 12px;
+    font-size:15px;
+    min-height:90px;
+    resize:vertical;
+    font-family:inherit;
+    margin-bottom:12px;
+  }
+  .write-box button{
+    background:var(--choco);
+    color:#fff;
+    border:none;
+    border-radius:8px;
+    padding:10px 20px;
+    font-size:14px;
+    font-weight:600;
+    cursor:pointer;
+    float:right;
+  }
+  .write-box button:hover{background:var(--choco-dark);}
+  .write-box::after{content:"";display:block;clear:both;}
+
+  .post{
+    background:var(--panel);
+    border:1px solid var(--line);
+    border-radius:14px;
+    padding:18px;
+    margin-bottom:16px;
+  }
+  .post-head{
+    display:flex;
+    justify-content:space-between;
+    align-items:baseline;
+    margin-bottom:8px;
+  }
+  .post-name{
+    font-weight:700;
+    color:var(--choco-dark);
+    font-size:15px;
+  }
+  .post-time{
+    font-size:12px;
+    color:var(--sub);
+  }
+  .post-content{
+    font-size:15px;
+    line-height:1.6;
+    white-space:pre-wrap;
+    word-break:break-word;
+    margin-bottom:14px;
+  }
+  .comments{
+    border-top:1px solid var(--line);
+    padding-top:10px;
+  }
+  .comment{
+    display:flex;
+    gap:6px;
+    font-size:13px;
+    margin-bottom:6px;
+    line-height:1.5;
+  }
+  .comment-name{
+    font-weight:700;
+    color:var(--choco);
+    flex-shrink:0;
+  }
+  .comment-content{
+    color:var(--ink);
+    word-break:break-word;
+  }
+  .comment-form{
+    display:flex;
+    gap:6px;
+    margin-top:10px;
+  }
+  .comment-form input[type="text"]{
+    border:1px solid var(--line);
+    border-radius:6px;
+    padding:6px 8px;
+    font-size:12px;
+    font-family:inherit;
+  }
+  .comment-form input.c-name{width:64px;flex-shrink:0;}
+  .comment-form input.c-content{flex:1;}
+  .comment-form button{
+    background:var(--accent);
+    color:#fff;
+    border:none;
+    border-radius:6px;
+    padding:6px 12px;
+    font-size:12px;
+    font-weight:600;
+    cursor:pointer;
+    flex-shrink:0;
+  }
+  .comment-form button:hover{opacity:0.9;}
+  .empty{
+    text-align:center;
+    color:var(--sub);
+    font-size:14px;
+    padding:40px 0;
+  }
+</style>
+</head>
+<body>
+
+<header>
+  <h1>오레오반 자유게시판</h1>
+  <p>오늘 쓴 글을 자유롭게 올려보세요</p>
+</header>
+
+<main>
+  <div class="write-box">
+    <input type="text" id="postName" placeholder="이름 또는 모둠명" maxlength="20">
+    <textarea id="postContent" placeholder="여기에 글을 써주세요" maxlength="1000"></textarea>
+    <button onclick="submitPost()">올리기</button>
+  </div>
+
+  <div id="postList">
+    <div class="empty">아직 글이 없어요. 첫 글을 남겨보세요!</div>
+  </div>
+</main>
+
+<script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-database-compat.js"></script>
+<script>
+  const firebaseConfig = {
+    apiKey: "AIzaSyD7gxnHcRXVrOU2cRLig4dybIkBxuIHyLk",
+    authDomain: "oreo55-6fe41.firebaseapp.com",
+    databaseURL: "https://oreo55-6fe41-default-rtdb.asia-southeast1.firebasedatabase.app",
+    projectId: "oreo55-6fe41",
+    storageBucket: "oreo55-6fe41.firebasestorage.app",
+    messagingSenderId: "761518669415",
+    appId: "1:761518669415:web:0066879dfa420f34349ec2"
+  };
+  firebase.initializeApp(firebaseConfig);
+  const db = firebase.database();
+  const postsRef = db.ref("posts");
+
+  function escapeHtml(str){
+    const div = document.createElement("div");
+    div.textContent = str;
+    return div.innerHTML;
+  }
+
+  function formatTime(ts){
+    const d = new Date(ts);
+    const hh = String(d.getHours()).padStart(2,"0");
+    const mm = String(d.getMinutes()).padStart(2,"0");
+    return `${d.getMonth()+1}/${d.getDate()} ${hh}:${mm}`;
+  }
+
+  function submitPost(){
+    const nameEl = document.getElementById("postName");
+    const contentEl = document.getElementById("postContent");
+    const name = nameEl.value.trim();
+    const content = contentEl.value.trim();
+    if(!name || !content){
+      alert("이름과 글 내용을 모두 입력해주세요.");
+      return;
+    }
+    postsRef.push({
+      name: name,
+      content: content,
+      timestamp: Date.now()
+    });
+    contentEl.value = "";
+  }
+
+  function submitComment(postId, nameInput, contentInput){
+    const name = nameInput.value.trim();
+    const content = contentInput.value.trim();
+    if(!name || !content){
+      alert("이름과 댓글 내용을 입력해주세요.");
+      return;
+    }
+    db.ref(`posts/${postId}/comments`).push({
+      name: name,
+      content: content,
+      timestamp: Date.now()
+    });
+    contentInput.value = "";
+  }
+
+  function renderComments(postId, comments){
+    let html = "";
+    if(comments){
+      const list = Object.values(comments).sort((a,b)=>a.timestamp-b.timestamp);
+      list.forEach(c=>{
+        html += `<div class="comment"><span class="comment-name">${escapeHtml(c.name)}</span><span class="comment-content">${escapeHtml(c.content)}</span></div>`;
+      });
+    }
+    return html;
+  }
+
+  postsRef.on("value", (snapshot)=>{
+    const data = snapshot.val();
+    const listEl = document.getElementById("postList");
+    listEl.innerHTML = "";
+
+    if(!data){
+      listEl.innerHTML = '<div class="empty">아직 글이 없어요. 첫 글을 남겨보세요!</div>';
+      return;
+    }
+
+    const posts = Object.entries(data).sort((a,b)=>b[1].timestamp-a[1].timestamp);
+
+    posts.forEach(([postId, post])=>{
+      const postEl = document.createElement("div");
+      postEl.className = "post";
+      postEl.innerHTML = `
+        <div class="post-head">
+          <span class="post-name">${escapeHtml(post.name)}</span>
+          <span class="post-time">${formatTime(post.timestamp)}</span>
+        </div>
+        <div class="post-content">${escapeHtml(post.content)}</div>
+        <div class="comments">
+          <div class="comment-list">${renderComments(postId, post.comments)}</div>
+          <div class="comment-form">
+            <input type="text" class="c-name" placeholder="이름" maxlength="20">
+            <input type="text" class="c-content" placeholder="댓글 달기" maxlength="200">
+            <button>등록</button>
+          </div>
+        </div>
+      `;
+      const nameInput = postEl.querySelector(".c-name");
+      const contentInput = postEl.querySelector(".c-content");
+      const btn = postEl.querySelector(".comment-form button");
+      btn.onclick = ()=> submitComment(postId, nameInput, contentInput);
+      contentInput.addEventListener("keydown", (e)=>{
+        if(e.key === "Enter") submitComment(postId, nameInput, contentInput);
+      });
+      listEl.appendChild(postEl);
+    });
+  });
+</script>
+
+</body>
+</html>
